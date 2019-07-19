@@ -2,8 +2,86 @@ grammar org.xtext.example.mydsl.MyDsl with org.eclipse.xtext.common.Terminals
 
 generate myDsl "http://www.xtext.org/example/mydsl/MyDsl"
 
+
 Model:
-	greetings+=Greeting*;
-	
-Greeting:
-	'Hello' name=ID '!';
+    (steps+=TopLevelStep)*;
+
+TopLevelStep:
+	ClassBlock |
+	RelaxedLinkBlock;
+
+ResponseStep:
+    StatusStatement |
+    HeaderStatement |
+    RepresentationStep |
+    FollowStatement
+;
+
+RepresentationStep:
+    PropertyBlock |
+    PropertyStatement |
+    LinkStep
+;
+
+LinkStep:
+    LinkStatement |
+    RelaxedLinkBlock |
+    StrictLinkBlock
+;
+
+Modifier: WithModifier | ExpectModifier;
+
+ExpectModifier: 'Expect';
+WithModifier: 'With';
+
+ClassBlock:
+	WithModifier 'Class' name=STRING '{'
+		(children+=RepresentationStep)*
+	'}';
+
+PropertyBlock:
+    modifier=Modifier 'Property' name=STRING '{'
+        (children+=RepresentationStep)*
+    '}'
+;
+
+PropertyStatement:
+    ExpectModifier 'Property' name=STRING (value=STRING)?
+;
+
+StatusStatement:
+    ExpectModifier 'Status' status=INT
+;
+
+RelaxedLinkBlock:
+    WithModifier 'Link' relation=STRING '{'
+        (children+=ResponseStep)*
+    '}'
+;
+
+StrictLinkBlock:
+    ExpectModifier 'Link' relation=STRING '{'
+        (children+=ResponseStep)*
+    '}'
+;
+
+LinkStatement:
+    ExpectModifier 'Link' relation=STRING
+;
+
+HeaderStatement:
+    ExpectModifier 'Header' fieldName=FIELD_NAME (exactValue=STRING | regex=MatchingRegex | variable=VARIABLE)?
+;
+
+MatchingRegex:
+    'Matching' pattern=STRING
+;
+
+FollowStatement:
+    'Follow' variable=VARIABLE
+;
+
+terminal VARIABLE: '[' ( ALPHA )* ']';
+terminal FIELD_NAME: ALPHA ('-' | ALPHA)*;
+
+terminal ALPHA: ('a'..'z' | 'A'..'Z');
